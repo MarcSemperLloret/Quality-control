@@ -79,10 +79,4 @@ The pipeline writes to `results_v3/`, including:
 - Citation metadata: `CITATION.cff`
 - License: `LICENSE` (MIT)
 
-## Release/DOI
-
-When publishing:
-1. Tag a release (e.g. `v1.0.0`).
-2. Archive in Zenodo.
-3. Add DOI + tag + commit hash to manuscript and supplement.
 
