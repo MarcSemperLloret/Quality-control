@@ -1,4 +1,4 @@
-# Paper 2 Reproducibility Package (QC with Guarantees v3)
+(QC with Guarantees v3)
 
 This repository is a clean package to reproduce the Paper 2 pipeline outputs.
 
@@ -19,6 +19,8 @@ The original AVAMET raw dataset is licensed and is not redistributed here.
 - Input contract and schema: `schemas/input_schema.json`
 - Validator: `scripts/validate_input.py`
 - Public toy sample (schema/CI only): `data/sample_public.parquet`
+
+Access may be granted by AVAMET upon reasonable request and subject to their terms and conditions(info@avamet.org).
 
 ## Quickstart (real licensed data)
 
