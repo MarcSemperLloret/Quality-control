@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Large generated outputs
+results_v3/
+paper_artifacts/generated/
+
+# Private/real data
+avamet_all.parquet
+data/private/
+

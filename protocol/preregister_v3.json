@@ -1,0 +1,118 @@
+{
+  "version": "v3",
+  "START": "2023-01-01 00:00:00",
+  "END": "2026-01-01 00:00:00",
+  "TRAIN": [
+    "2023-01-01 00:00:00",
+    "2025-01-01 00:00:00"
+  ],
+  "TEST": [
+    "2025-01-01 00:00:00",
+    "2026-01-01 00:00:00"
+  ],
+  "B_SET": [
+    0.05,
+    0.1
+  ],
+  "epsilon": 0.005,
+  "tau": 0.1,
+  "k_top": 20,
+  "seeds": {
+    "seed_global": 20260218,
+    "seed_station_split": 20260218,
+    "seed_model": 20260218,
+    "seed_synthetic": 20260218
+  },
+  "grids": {
+    "T_hours": [
+      3,
+      6,
+      12,
+      24,
+      48
+    ],
+    "tol_hpa": [
+      0.05,
+      0.1,
+      0.2
+    ],
+    "policy_suspect": [
+      "KEEP",
+      "DROP"
+    ],
+    "config_ref": {
+      "T_ref": 3,
+      "tol_ref": 0.1
+    },
+    "downstream_alpha_grid": [
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0
+    ]
+  },
+  "utility_v3": {
+    "definition": "utility_v3 = -state_wind_spread - lambda*missing_additional - eta*suspect_rate",
+    "lambda": 0.25,
+    "eta": 0.05,
+    "selection_scope": "dirty",
+    "selection_phase": "train"
+  },
+  "benchmark_stuck": {
+    "enabled": true,
+    "seed_synthetic": 20260218,
+    "dirty_station_count": 5,
+    "durations_hours": [
+      3,
+      6,
+      12,
+      24
+    ],
+    "injection_tol_hpa": 0.05,
+    "constraints": {
+      "recall_min": 0.95,
+      "precision_min": 0.9
+    }
+  },
+  "quality_weights": {
+    "q_definition": {
+      "FAIL": 0.0,
+      "SUSPECT": 0.5,
+      "PASS": 1.0
+    },
+    "fields": [
+      "q_wind_gust",
+      "q_pressure"
+    ]
+  },
+  "downstream_cost_sensitive": {
+    "formula": "score = RMSE_operational + gamma*(1-coverage_operational)",
+    "gamma": 2.968014163696226,
+    "gamma_source": "P0 TRAIN ridge RMSE_operational",
+    "evaluation_scope_for_C5": "global"
+  },
+  "c2v2_thresholds": {
+    "spread_ratio_r": 10.0,
+    "missing_ratio_m": 10.0,
+    "removed_vs_kept_delta_min_train": 0.05,
+    "removed_vs_kept_delta_min_test": 0.02,
+    "spread_min": 0.01,
+    "required_subchecks": [
+      "C2v2.1",
+      "C2v2.2"
+    ]
+  },
+  "fixed_rules": {
+    "dedup_key": [
+      "station_id",
+      "timestamp_utc"
+    ],
+    "availability_threshold": 0.8,
+    "anti_concentration_max_share": 0.45,
+    "ci_config_ref": {
+      "T_ref": 3,
+      "tol_ref": 0.1
+    }
+  }
+}

@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate sample input contract
+        run: |
+          python scripts/validate_input.py --input data/sample_public.parquet
+
+      - name: Check config manifest cardinality
+        run: |
+          python - << 'PY'
+          import pandas as pd
+          df = pd.read_csv("configs/manifest.csv")
+          assert df.shape[0] == 30, f"Expected 30 configs, got {df.shape[0]}"
+          print("OK: configs/manifest.csv has 30 rows")
+          PY
+

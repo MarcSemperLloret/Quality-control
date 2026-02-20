@@ -1,0 +1,33 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Paper2InputRow",
+  "type": "object",
+  "required": ["station_id", "obs_time", "payload_json"],
+  "properties": {
+    "station_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Station identifier"
+    },
+    "obs_time": {
+      "type": "string",
+      "description": "UTC timestamp parseable by pandas/duckdb"
+    },
+    "payload_json": {
+      "type": "string",
+      "description": "JSON string with AVAMET sensor payload"
+    }
+  },
+  "x_payload_required_keys": [
+    "pres mit_mit",
+    "vent vel_mit",
+    "vent vel_max",
+    "vent gra_mit"
+  ],
+  "x_units_expected": {
+    "pres mit_mit": "hPa (or station-level Pa/mmHg to be normalized)",
+    "vent vel_mit": "native AVAMET wind mean",
+    "vent vel_max": "native AVAMET wind gust",
+    "vent gra_mit": "degrees [0,360] or sentinel 999"
+  }
+}
