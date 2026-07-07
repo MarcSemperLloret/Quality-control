@@ -50,6 +50,12 @@ def main() -> None:
         "figures/F7_synthetic_mnar_vs_tailshift.pdf",
         "figures/F8_benchmark_detector_power.pdf",
         "downstream/downstream_cost_sensitive_v3.csv",
+        "metrics_p3_vs_p5_dqc.csv",
+        "metrics_exceedance_retention.csv",
+        "tab_policy_test_exceedance_summary.csv",
+        "tab_policy_test_exceedance_summary.tex",
+        "products/P5/data.parquet",
+        "products/P5/manifest.json",
         "synthetic/synthetic_metrics.csv",
         "synthetic/synthetic_tailshape_metrics.csv",
     ]
@@ -61,8 +67,10 @@ def main() -> None:
 
     checklist = _load_json(results / "checklist_acceptance_v4.json")
     bench_sel = _load_json(results / "benchmark_stuck/benchmark_perf_selected_config.json")
+    p5_manifest = _load_json(results / "products/P5/manifest.json")
     grid = pd.read_csv(results / "benchmark_stuck/benchmark_perf_by_config.csv")
     sel = pd.read_csv(results / "selected_stations.csv")
+    exceed_summary = pd.read_csv(results / "tab_policy_test_exceedance_summary.csv")
 
     if sel.shape[0] != 30:
         errors.append(f"selected_stations.csv should have 30 rows, got {sel.shape[0]}")
@@ -73,6 +81,12 @@ def main() -> None:
 
     if int(grid.shape[0]) != 30:
         errors.append(f"benchmark_perf_by_config.csv should have 30 rows, got {grid.shape[0]}")
+
+    if p5_manifest.get("policy") != "domain_rule_qc":
+        errors.append(f"P5 manifest policy expected domain_rule_qc, got {p5_manifest.get('policy')}")
+
+    if "P5" not in set(exceed_summary.get("product", [])):
+        errors.append("tab_policy_test_exceedance_summary.csv should include P5")
 
     if checklist.get("submit_status") != "SUBMIT":
         errors.append(f"submit_status expected SUBMIT, got {checklist.get('submit_status')}")
@@ -112,4 +126,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

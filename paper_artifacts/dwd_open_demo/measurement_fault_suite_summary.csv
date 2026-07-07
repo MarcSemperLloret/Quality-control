@@ -1,0 +1,25 @@
+detector,tp,fp,fn,recall,recall_ci95_low,recall_ci95_high,recall_n,precision,precision_ci95_low,precision_ci95_high,precision_n,median_latency_min,events_detected,events_total,fault_type,fault_label,n_injected_rows,n_benchmark_rows,pressure_spatial_threshold_hpa
+Rule evidence,720,14,0,1.0,0.9946929555168715,1.0,720,0.9809264305177112,0.9682402761408428,0.9886048449349139,734,0.0,20,20,pressure_stuck,Pressure stuck,720,960,8.0
+Rule + spatial evidence,720,14,0,1.0,0.9946929555168715,1.0,720,0.9809264305177112,0.9682402761408428,0.9886048449349139,734,0.0,20,20,pressure_stuck,Pressure stuck,720,960,8.0
+P3 deletion action,0,0,720,0.0,0.0,0.005307044483128604,720,,,,0,,0,20,pressure_stuck,Pressure stuck,720,960,8.0
+Aggressive deletion action,720,14,0,1.0,0.9946929555168715,1.0,720,0.9809264305177112,0.9682402761408428,0.9886048449349139,734,0.0,20,20,pressure_stuck,Pressure stuck,720,960,8.0
+Rule evidence,240,0,0,1.0,0.9842460800584412,1.0,240,1.0,0.9842460800584412,1.0,240,0.0,20,20,pressure_unit_scale,Pressure unit-scale,240,480,8.0
+Rule + spatial evidence,240,0,0,1.0,0.9842460800584412,1.0,240,1.0,0.9842460800584412,1.0,240,0.0,20,20,pressure_unit_scale,Pressure unit-scale,240,480,8.0
+P3 deletion action,240,0,0,1.0,0.9842460800584412,1.0,240,1.0,0.9842460800584412,1.0,240,0.0,20,20,pressure_unit_scale,Pressure unit-scale,240,480,8.0
+Aggressive deletion action,240,0,0,1.0,0.9842460800584412,1.0,240,1.0,0.9842460800584412,1.0,240,0.0,20,20,pressure_unit_scale,Pressure unit-scale,240,480,8.0
+Rule evidence,60,0,0,1.0,0.93982814785791,0.9999999999999998,60,1.0,0.93982814785791,0.9999999999999998,60,0.0,20,20,wind_incoherence,Wind cross-channel incoherence,60,300,8.0
+Rule + spatial evidence,60,0,0,1.0,0.93982814785791,0.9999999999999998,60,1.0,0.93982814785791,0.9999999999999998,60,0.0,20,20,wind_incoherence,Wind cross-channel incoherence,60,300,8.0
+P3 deletion action,60,0,0,1.0,0.93982814785791,0.9999999999999998,60,1.0,0.93982814785791,0.9999999999999998,60,0.0,20,20,wind_incoherence,Wind cross-channel incoherence,60,300,8.0
+Aggressive deletion action,60,0,0,1.0,0.93982814785791,0.9999999999999998,60,1.0,0.93982814785791,0.9999999999999998,60,0.0,20,20,wind_incoherence,Wind cross-channel incoherence,60,300,8.0
+Rule evidence,0,0,720,0.0,0.0,0.005307044483128604,720,,,,0,,0,20,pressure_offset,Pressure offset,720,960,8.0
+Rule + spatial evidence,288,0,432,0.4,0.36483795556058607,0.43622345333603973,720,1.0,0.9868371723598931,0.9999999999999999,288,0.0,8,20,pressure_offset,Pressure offset,720,960,8.0
+P3 deletion action,0,0,720,0.0,0.0,0.005307044483128604,720,,,,0,,0,20,pressure_offset,Pressure offset,720,960,8.0
+Aggressive deletion action,0,0,720,0.0,0.0,0.005307044483128604,720,,,,0,,0,20,pressure_offset,Pressure offset,720,960,8.0
+Rule evidence,0,0,720,0.0,0.0,0.005307044483128604,720,,,,0,,0,10,pressure_drift,Pressure drift,720,840,8.0
+Rule + spatial evidence,164,0,556,0.22777777777777777,0.19863538342949713,0.2598095630113174,720,1.0,0.9771125748805723,0.9999999999999999,164,300.0,4,10,pressure_drift,Pressure drift,720,840,8.0
+P3 deletion action,0,0,720,0.0,0.0,0.005307044483128604,720,,,,0,,0,10,pressure_drift,Pressure drift,720,840,8.0
+Aggressive deletion action,0,0,720,0.0,0.0,0.005307044483128604,720,,,,0,,0,10,pressure_drift,Pressure drift,720,840,8.0
+Rule evidence,0,0,90,0.0,0.0,0.04093562556432678,90,,,,0,,0,30,wind_spike_burst,Wind spike/burst,90,450,8.0
+Rule + spatial evidence,34,0,56,0.37777777777777777,0.2845596823864481,0.4810023594181651,90,1.0,0.8984854458466761,0.9999999999999999,34,0.0,12,30,wind_spike_burst,Wind spike/burst,90,450,8.0
+P3 deletion action,0,0,90,0.0,0.0,0.04093562556432678,90,,,,0,,0,30,wind_spike_burst,Wind spike/burst,90,450,8.0
+Aggressive deletion action,0,0,90,0.0,0.0,0.04093562556432678,90,,,,0,,0,30,wind_spike_burst,Wind spike/burst,90,450,8.0

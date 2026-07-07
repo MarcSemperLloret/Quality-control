@@ -1,0 +1,57 @@
+policy,phase,scope,state_wind_spread,max_decile_unavailable,min_decile_unavailable
+Raw,train,global,0.0,0.0,0.0
+Raw,train,clean,0.0,0.0,0.0
+Raw,train,medium,0.0,0.0,0.0
+Raw,train,dirty,0.0,0.0,0.0
+Raw,test,global,0.0,0.0,0.0
+Raw,test,clean,0.0,0.0,0.0
+Raw,test,medium,0.0,0.0,0.0
+Raw,test,dirty,0.0,0.0,0.0
+Delete-all-flags,train,global,0.00045375608491741943,0.0008449264529928418,4.622613163221169e-05
+Delete-all-flags,train,clean,0.00028616159718596116,0.00029667519181585675,0.0
+Delete-all-flags,train,medium,0.0003656148224513332,0.0005086514597419909,9.735297267302056e-06
+Delete-all-flags,train,dirty,0.0007292273870622564,0.0020982310876928867,0.00011582340791073876
+Delete-all-flags,test,global,0.0001556321324070659,0.0004062188411684331,0.00024083886027640892
+Delete-all-flags,test,clean,0.00045228585839948585,0.0006703449698344763,0.00016808606006275212
+Delete-all-flags,test,medium,0.00020764178131943314,0.0004695570511817186,0.0
+Delete-all-flags,test,dirty,0.0002743451856267458,0.0006206740896780018,0.00023396290624468267
+Constraint-selected P3,train,global,0.0,0.0,0.0
+Constraint-selected P3,train,clean,0.0,0.0,0.0
+Constraint-selected P3,train,medium,0.0,0.0,0.0
+Constraint-selected P3,train,dirty,0.0,0.0,0.0
+Constraint-selected P3,test,global,0.0,0.0,0.0
+Constraint-selected P3,test,clean,0.0,0.0,0.0
+Constraint-selected P3,test,medium,0.0,0.0,0.0
+Constraint-selected P3,test,dirty,0.0,0.0,0.0
+P4 pressure spatial quarantine,train,global,0.0,0.0,0.0
+P4 pressure spatial quarantine,train,clean,0.0,0.0,0.0
+P4 pressure spatial quarantine,train,medium,0.0,0.0,0.0
+P4 pressure spatial quarantine,train,dirty,0.0,0.0,0.0
+P4 pressure spatial quarantine,test,global,0.0,0.0,0.0
+P4 pressure spatial quarantine,test,clean,0.0,0.0,0.0
+P4 pressure spatial quarantine,test,medium,0.0,0.0,0.0
+P4 pressure spatial quarantine,test,dirty,0.0,0.0,0.0
+P4 pressure spatial direct deletion,train,global,0.0,0.0,0.0
+P4 pressure spatial direct deletion,train,clean,0.0,0.0,0.0
+P4 pressure spatial direct deletion,train,medium,0.0,0.0,0.0
+P4 pressure spatial direct deletion,train,dirty,0.0,0.0,0.0
+P4 pressure spatial direct deletion,test,global,0.0,0.0,0.0
+P4 pressure spatial direct deletion,test,clean,0.0,0.0,0.0
+P4 pressure spatial direct deletion,test,medium,0.0,0.0,0.0
+P4 pressure spatial direct deletion,test,dirty,0.0,0.0,0.0
+P5 full spatial quarantine,train,global,0.0,0.0,0.0
+P5 full spatial quarantine,train,clean,0.0,0.0,0.0
+P5 full spatial quarantine,train,medium,0.0,0.0,0.0
+P5 full spatial quarantine,train,dirty,0.0,0.0,0.0
+P5 full spatial quarantine,test,global,0.0,0.0,0.0
+P5 full spatial quarantine,test,clean,0.0,0.0,0.0
+P5 full spatial quarantine,test,medium,0.0,0.0,0.0
+P5 full spatial quarantine,test,dirty,0.0,0.0,0.0
+P6 full spatial direct deletion,train,global,0.0,0.0,0.0
+P6 full spatial direct deletion,train,clean,0.0,0.0,0.0
+P6 full spatial direct deletion,train,medium,0.0,0.0,0.0
+P6 full spatial direct deletion,train,dirty,0.0,0.0,0.0
+P6 full spatial direct deletion,test,global,0.0,0.0,0.0
+P6 full spatial direct deletion,test,clean,0.0,0.0,0.0
+P6 full spatial direct deletion,test,medium,0.0,0.0,0.0
+P6 full spatial direct deletion,test,dirty,0.0,0.0,0.0

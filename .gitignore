@@ -11,8 +11,11 @@ venv/
 # Large generated outputs
 results_v3/
 paper_artifacts/generated/
+runs_additional/DWD/
+data/dwd_10min/raw/
+article/
+*.zip
 
 # Private/real data
 avamet_all.parquet
 data/private/
-

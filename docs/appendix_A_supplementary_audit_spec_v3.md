@@ -58,11 +58,12 @@ Row-keep masks by product (`P0..P5`):
 | `P2` | convert+verify | DROP | KEEP | KEEP | fail-only curated baseline |
 | `P3` | budgeted v3 | DROP | depends on config (`DROP` or `KEEP`) | KEEP | optimized policy under constraints |
 | `P4` | policy baseline | DROP | DROP (`T_ref=3`, `tol_ref=0.10`) | KEEP | non-budgeted baseline |
-| `P5` | tool baseline | in this run unavailable | unavailable | unavailable | `SaQC` not installed in this environment |
+| `P5` | fixed domain-rule QC | DROP | DROP (`T_ref=3`, `tol_ref=0.10`) | KEEP | non-optimized meteorological rule baseline |
 
-SaQC mapping status:
-- No operational SaQC plugin mapping is active in this run.
-- `results_v3/tool_baseline_unavailable.txt` and `results_v3/products/P5/manifest.json` explicitly document this.
+P5-DQC status:
+- `P5` is a local, fully reproducible fixed rule baseline inspired by standard meteorological QC practice.
+- It is not claimed to be an exact implementation of WMO, HadISD, or SaQC.
+- The active rule list and configuration are recorded in `results_v3/products/P5/manifest.json`.
 
 ## 3) S2 - Full Configuration Grid Manifest (30 configs)
 
@@ -229,7 +230,10 @@ Current run benchmark manifest highlights:
 | `results_v3/pareto_drop_rules.csv` | Primary-rule Pareto decomposition of removals. |
 | `results_v3/metrics_station_heterogeneity.csv` | Station-level heterogeneity metrics (dirty/test). |
 | `results_v3/metrics_p1_vs_p4_comparison.csv` | Direct comparison P1 vs P4 behavior. |
-| `results_v3/metrics_p3_vs_p5_tool.csv` | P3 vs tool baseline status/metric summary. |
+| `results_v3/metrics_p3_vs_p5_dqc.csv` | P3 vs fixed domain-rule QC baseline summary. |
+| `results_v3/metrics_exceedance_retention.csv` | Real TEST retention of raw high-state exceedances at P0-TRAIN u95/u99 thresholds. |
+| `results_v3/tab_policy_test_exceedance_summary.csv` | Compact TEST policy table: coverage, MNAR, exceedance retention, and downstream score. |
+| `results_v3/tab_policy_test_exceedance_summary.tex` | LaTeX rendering of the compact TEST policy table. |
 
 ### 6.4 Benchmark, downstream, synthetic
 
@@ -312,4 +316,3 @@ Computed from `results_v3/downstream/downstream_cost_sensitive_v3.csv` by recomp
 - Per-config constraints: `paper 2/src/06_run_qc_with_guarantees_v3.py:1272`
 - C1..C6 checklist construction: `paper 2/src/06_run_qc_with_guarantees_v3.py:2802`
 - Required artifact validation list: `paper 2/src/06_run_qc_with_guarantees_v3.py:2330`
-

@@ -124,6 +124,16 @@ def _write_preregister(paths: Paths, gamma_value: float) -> None:
             "config_ref": {"T_ref": T_REF, "tol_ref": TOL_REF},
             "downstream_alpha_grid": [0.01, 0.1, 1.0, 10.0, 100.0],
         },
+        "domain_rule_baseline": {
+            "product": "P5",
+            "policy": "domain_rule_qc",
+            "description": "Fixed, non-optimized rule-based meteorological QC baseline.",
+            "drop_fail": True,
+            "drop_suspect": True,
+            "unit_censor": False,
+            "T_hours": T_REF,
+            "tol_hpa": TOL_REF,
+        },
         "utility_v3": {
             "definition": "utility_v3 = -state_wind_spread - lambda*missing_additional - eta*suspect_rate",
             "lambda": UTILITY_V3_LAMBDA,
@@ -945,8 +955,9 @@ def _build_product_keep_mask(df: pd.DataFrame, product: str, config: dict[str, A
         return ~(fail_any | df[stuck_col])
 
     if product == "P5":
-        # Placeholder for unavailable tool baseline; keep all rows unless real tool output exists.
-        return ~fail_any
+        # Fixed domain-rule QC baseline: physical/internal checks + conventional persistence.
+        stuck_col = f"suspect_stuck_T{T_REF}_tol{TOL_REF:.2f}"
+        return ~(fail_any | df[stuck_col])
 
     raise ValueError(product)
 
@@ -1640,6 +1651,154 @@ def _aggregate_metrics(
     return tails, miss, mnar, topk, removed_vs_kept, removal_by_decile, suspect_burden
 
 
+def _product_label(product: str) -> str:
+    return {
+        "P0": "P0 Raw",
+        "P1": "P1 strict",
+        "P2": "P2 fail-only",
+        "P3": "P3 budgeted",
+        "P4": "P4 policy baseline",
+        "P5": "P5-DQC",
+    }.get(product, product)
+
+
+def _compute_exceedance_retention_tables(
+    paths: Paths,
+    product_data: dict[str, pd.DataFrame],
+    miss: pd.DataFrame,
+    mnar: pd.DataFrame,
+    cost_df: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    _require("P0" in product_data, "P0 missing for exceedance retention metrics.")
+
+    p0 = product_data["P0"][["station_id", "timestamp_utc", "stratum", "wind_gust"]].rename(columns={"wind_gust": "wind_gust_P0"})
+    vals_train = p0.loc[_phase_mask(p0, "train"), "wind_gust_P0"].dropna().to_numpy(dtype=float)
+    _require(vals_train.size > 0, "No P0 TRAIN wind_gust values for exceedance thresholds.")
+    thresholds = {
+        "u95": float(np.nanquantile(vals_train, 0.95)),
+        "u99": float(np.nanquantile(vals_train, 0.99)),
+    }
+
+    detail_rows = []
+    for product in ["P0", "P1", "P2", "P3", "P4", "P5"]:
+        if product not in product_data or product_data[product].empty:
+            continue
+        dfp = product_data[product][["station_id", "timestamp_utc", "wind_gust"]].rename(columns={"wind_gust": "wind_gust_product"})
+        merged = p0.merge(dfp, on=["station_id", "timestamp_utc"], how="left", validate="one_to_one")
+        for scope in ["global", "clean", "medium", "dirty"]:
+            sub = merged.loc[_phase_mask(merged, "test") & _scope_mask(merged, scope)].copy()
+            if sub.empty:
+                continue
+            for threshold_name, threshold_value in thresholds.items():
+                raw_exceed = sub["wind_gust_P0"].notna() & (sub["wind_gust_P0"] > threshold_value)
+                product_retained = raw_exceed & sub["wind_gust_product"].notna()
+                product_exceed = sub["wind_gust_product"].notna() & (sub["wind_gust_product"] > threshold_value)
+                n_raw_exceed = int(raw_exceed.sum())
+                n_product_retained = int(product_retained.sum())
+                n_product_exceed = int(product_exceed.sum())
+                retention = np.nan if n_raw_exceed == 0 else float(n_product_retained / n_raw_exceed)
+                delta_exceed = np.nan if n_raw_exceed == 0 else float((n_product_exceed - n_raw_exceed) / n_raw_exceed)
+                detail_rows.append(
+                    {
+                        "product": product,
+                        "product_label": _product_label(product),
+                        "phase": "test",
+                        "scope": scope,
+                        "variable": "wind_gust",
+                        "threshold_source": "P0_train_global",
+                        "threshold": threshold_name,
+                        "threshold_value": threshold_value,
+                        "n_raw_exceed": n_raw_exceed,
+                        "n_product_retained_raw_exceed": n_product_retained,
+                        "retention_raw_exceedance": retention,
+                        "n_product_exceed": n_product_exceed,
+                        "delta_product_exceed_count_rel": delta_exceed,
+                        "n_raw_nonnull": int(sub["wind_gust_P0"].notna().sum()),
+                        "n_product_nonnull": int(sub["wind_gust_product"].notna().sum()),
+                    }
+                )
+
+    detail = pd.DataFrame(detail_rows)
+    detail.to_csv(paths.results / "metrics_exceedance_retention.csv", index=False)
+
+    summary_rows = []
+    for product in ["P0", "P1", "P2", "P3", "P4", "P5"]:
+        if product not in product_data or product_data[product].empty:
+            continue
+
+        def scalar(df: pd.DataFrame, filters: dict[str, Any], field: str) -> float:
+            sub = df.copy()
+            for k, v in filters.items():
+                sub = sub[sub[k] == v]
+            if sub.empty:
+                return np.nan
+            return float(sub.iloc[0][field])
+
+        missing_rate = scalar(miss, {"product": product, "phase": "test", "scope": "global", "variable": "wind_gust"}, "missing_rate_product")
+        spread_dirty = scalar(mnar, {"product": product, "phase": "test", "scope": "dirty"}, "state_wind_spread")
+        ridge_rmse = scalar(cost_df, {"product": product, "model": "ridge", "phase": "test", "scope": "global"}, "rmse_operational")
+        ridge_cov = scalar(cost_df, {"product": product, "model": "ridge", "phase": "test", "scope": "global"}, "coverage_operational")
+        ridge_score = scalar(cost_df, {"product": product, "model": "ridge", "phase": "test", "scope": "global"}, "score_cost_sensitive")
+
+        def retention(threshold: str, scope: str = "dirty") -> float:
+            if detail.empty:
+                return np.nan
+            sub = detail[
+                (detail["product"] == product)
+                & (detail["phase"] == "test")
+                & (detail["scope"] == scope)
+                & (detail["threshold"] == threshold)
+            ]
+            if sub.empty:
+                return np.nan
+            return float(sub.iloc[0]["retention_raw_exceedance"])
+
+        summary_rows.append(
+            {
+                "product": product,
+                "product_label": _product_label(product),
+                "coverage_wind_gust_test_global": np.nan if np.isnan(missing_rate) else float(1.0 - missing_rate),
+                "state_wind_spread_test_dirty": spread_dirty,
+                "retention_u95_raw_test_dirty": retention("u95"),
+                "retention_u99_raw_test_dirty": retention("u99"),
+                "threshold_u95_P0_train_global": thresholds["u95"],
+                "threshold_u99_P0_train_global": thresholds["u99"],
+                "downstream_ridge_rmse_test_global": ridge_rmse,
+                "downstream_ridge_coverage_test_global": ridge_cov,
+                "downstream_ridge_score_test_global": ridge_score,
+            }
+        )
+
+    summary = pd.DataFrame(summary_rows)
+    summary.to_csv(paths.results / "tab_policy_test_exceedance_summary.csv", index=False)
+    tex_path = paths.results / "tab_policy_test_exceedance_summary.tex"
+    if summary.empty:
+        tex_path.write_text("% No policy exceedance summary rows generated.\n", encoding="utf-8")
+    else:
+        cols = [
+            "product",
+            "coverage_wind_gust_test_global",
+            "state_wind_spread_test_dirty",
+            "retention_u95_raw_test_dirty",
+            "retention_u99_raw_test_dirty",
+            "downstream_ridge_score_test_global",
+        ]
+        headers = ["Product", "Coverage", "MNAR", "Ret. u95", "Ret. u99", "Ridge score"]
+        lines = [
+            "\\begin{tabular}{lrrrrr}",
+            "\\hline",
+            " & ".join(headers) + " \\\\",
+            "\\hline",
+        ]
+        for _, row in summary[cols].iterrows():
+            vals = [str(row["product"])]
+            vals.extend(f"{float(row[c]):.4f}" if not pd.isna(row[c]) else "NA" for c in cols[1:])
+            lines.append(" & ".join(vals) + " \\\\")
+        lines.extend(["\\hline", "\\end{tabular}", ""])
+        tex_path.write_text("\n".join(lines), encoding="utf-8")
+    return detail, summary
+
+
 def _pareto_primary_removed(df_eval: pd.DataFrame, product: str, phase: str, scope: str) -> pd.DataFrame:
     mask = _phase_mask(df_eval, phase) & _scope_mask(df_eval, scope)
     sub = df_eval.loc[mask].copy()
@@ -2327,7 +2486,7 @@ def _make_figure_f7(paths: Paths, synthetic_metrics: pd.DataFrame, synthetic_tai
     plt.close()
 
 
-def _validate_required_artifacts(paths: Paths, tool_available: bool, budgets: tuple[float, ...]) -> None:
+def _validate_required_artifacts(paths: Paths, p5_available: bool, budgets: tuple[float, ...]) -> None:
     required = [
         "preregister_v3.json",
         "selection_report.json",
@@ -2345,7 +2504,10 @@ def _validate_required_artifacts(paths: Paths, tool_available: bool, budgets: tu
         "metrics_suspect_burden.csv",
         "metrics_topk.csv",
         "metrics_p1_vs_p4_comparison.csv",
-        "metrics_p3_vs_p5_tool.csv",
+        "metrics_p3_vs_p5_dqc.csv",
+        "metrics_exceedance_retention.csv",
+        "tab_policy_test_exceedance_summary.csv",
+        "tab_policy_test_exceedance_summary.tex",
         "pareto_drop_rules.csv",
         "checklist_acceptance_v4.json",
         "decision_summary_v4.md",
@@ -2374,8 +2536,9 @@ def _validate_required_artifacts(paths: Paths, tool_available: bool, budgets: tu
         required.append(f"products/{p}/manifest.json")
     for B in budgets:
         required.append(_budget_best_filename(float(B)))
-    if not tool_available:
-        required.append("tool_baseline_unavailable.txt")
+    if not p5_available:
+        required.append("products/P5/data.parquet")
+        required.append("products/P5/manifest.json")
 
     missing = [str(paths.results / r) for r in required if not (paths.results / r).exists()]
     _require(len(missing) == 0, f"Missing required artifacts: {missing}")
@@ -2605,6 +2768,7 @@ def main() -> None:
         "P2": _build_product_keep_mask(base, "P2"),
         "P3": _build_product_keep_mask(base, "P3", config=best_selected),
         "P4": _build_product_keep_mask(base, "P4"),
+        "P5": _build_product_keep_mask(base, "P5"),
     }
     suspect_masks = {
         "P0": _build_product_suspect_mask(base, "P0"),
@@ -2612,6 +2776,7 @@ def main() -> None:
         "P2": _build_product_suspect_mask(base, "P2"),
         "P3": _build_product_suspect_mask(base, "P3", config=best_selected),
         "P4": _build_product_suspect_mask(base, "P4"),
+        "P5": _build_product_suspect_mask(base, "P5"),
     }
 
     product_data: dict[str, pd.DataFrame] = {}
@@ -2637,54 +2802,32 @@ def main() -> None:
             "tol": TOL_REF,
             "quality_weights": True,
         },
+        "P5": {
+            "policy": "domain_rule_qc",
+            "description": "fixed meteorological domain-rule baseline; no budget search and no tuning on outcomes",
+            "drop_fail": True,
+            "drop_suspect": True,
+            "unit_censor": False,
+            "T": T_REF,
+            "tol": TOL_REF,
+            "rules": [
+                "pressure_zero_fail",
+                "pressure_out_of_range_after_unit_normalization",
+                "wind_gust_less_than_wind_mean",
+                "negative_wind",
+                "pressure_persistence_stuck_T3_tol0.10",
+                "wind_direction_sentinel_or_out_of_range_masked",
+            ],
+            "quality_weights": True,
+        },
     }
 
-    for p in ["P0", "P1", "P2", "P3", "P4"]:
+    for p in ["P0", "P1", "P2", "P3", "P4", "P5"]:
         d = _apply_product(base, product=p, keep_mask=keep_masks[p], suspect_mask=suspect_masks[p])
         product_data[p] = d
         _write_product_data(paths, p, d, manifests[p])
-
-    # P5 tool baseline availability (SaQC preferred, else explicit unavailability artifact).
-    tool_available = False
-    tool_reason = "SaQC not available in environment."
-    try:
-        import saqc  # type: ignore  # noqa: F401
-
-        tool_available = False
-        tool_reason = "SaQC detected but reproducible integration for this workspace is not configured."
-    except Exception:
-        tool_available = False
-        tool_reason = "SaQC package is not installed."
-
-    if tool_available:
-        p5_data = product_data["P4"].copy()
-        p5_data["product"] = "P5"
-        product_data["P5"] = p5_data
-        _write_product_data(
-            paths,
-            "P5",
-            p5_data,
-            {
-                "policy": "tool_baseline_saqc",
-                "available": True,
-                "quality_weights": True,
-            },
-        )
-    else:
-        (paths.results / "tool_baseline_unavailable.txt").write_text(tool_reason, encoding="utf-8")
-        p5_empty = product_data["P4"].iloc[0:0].copy()
-        p5_empty["product"] = "P5"
-        _write_product_data(
-            paths,
-            "P5",
-            p5_empty,
-            {
-                "policy": "tool_baseline_unavailable",
-                "available": False,
-                "reason": tool_reason,
-                "quality_weights": True,
-            },
-        )
+    p5_available = bool("P5" in product_data and not product_data["P5"].empty)
+    _require(p5_available, "P5-DQC domain-rule baseline product is empty.")
 
     tails, miss, mnar, topk, removed_vs_kept, removal_by_decile, suspect_burden = _aggregate_metrics(base, product_data, paths)
 
@@ -2715,6 +2858,15 @@ def main() -> None:
     # Downstream v3 + F6
     skill_df, cost_df, tail_df = _downstream_eval_v3(paths, product_data, gamma_value=gamma_value)
     _make_figure_f6(paths, cost_df=cost_df, tail_df=tail_df)
+
+    # Real TEST exceedance retention at fixed P0-TRAIN thresholds.
+    exceedance_retention, policy_exceedance_summary = _compute_exceedance_retention_tables(
+        paths,
+        product_data=product_data,
+        miss=miss,
+        mnar=mnar,
+        cost_df=cost_df,
+    )
 
     # Synthetic stress test + F7
     synthetic_metrics, synthetic_tailshape = _run_synthetic_stress(paths, base=base, product_data=product_data)
@@ -2752,22 +2904,24 @@ def main() -> None:
     p14["state_wind_spread_diff_P1_minus_P4"] = p14["state_wind_spread_P1"] - p14["state_wind_spread_P4"]
     p14.to_csv(paths.results / "metrics_p1_vs_p4_comparison.csv", index=False)
 
-    # P3 vs P5 tool (or unavailable status)
-    if tool_available and ("P5" in product_data) and (not product_data["P5"].empty):
-        p3m = mnar[(mnar["product"] == "P3") & (mnar["phase"] == "test") & (mnar["scope"] == "dirty")][["state_wind_spread"]]
-        p5m = mnar[(mnar["product"] == "P5") & (mnar["phase"] == "test") & (mnar["scope"] == "dirty")][["state_wind_spread"]]
-        out_p35 = pd.DataFrame(
-            [
-                {
-                    "status": "available",
-                    "p3_state_wind_spread_test_dirty": float(p3m.iloc[0]["state_wind_spread"]) if not p3m.empty else np.nan,
-                    "p5_state_wind_spread_test_dirty": float(p5m.iloc[0]["state_wind_spread"]) if not p5m.empty else np.nan,
-                }
-            ]
-        )
-    else:
-        out_p35 = pd.DataFrame([{"status": "unavailable", "reason": tool_reason}])
-    out_p35.to_csv(paths.results / "metrics_p3_vs_p5_tool.csv", index=False)
+    # P3 vs P5 fixed domain-rule QC baseline.
+    p3m = mnar[(mnar["product"] == "P3") & (mnar["phase"] == "test") & (mnar["scope"] == "dirty")][["state_wind_spread"]]
+    p5m = mnar[(mnar["product"] == "P5") & (mnar["phase"] == "test") & (mnar["scope"] == "dirty")][["state_wind_spread"]]
+    p3miss = miss[(miss["product"] == "P3") & (miss["phase"] == "test") & (miss["scope"] == "dirty") & (miss["variable"] == "wind_gust")]
+    p5miss = miss[(miss["product"] == "P5") & (miss["phase"] == "test") & (miss["scope"] == "dirty") & (miss["variable"] == "wind_gust")]
+    out_p35 = pd.DataFrame(
+        [
+            {
+                "status": "available",
+                "baseline": "fixed_domain_rule_qc",
+                "p3_state_wind_spread_test_dirty": float(p3m.iloc[0]["state_wind_spread"]) if not p3m.empty else np.nan,
+                "p5_dqc_state_wind_spread_test_dirty": float(p5m.iloc[0]["state_wind_spread"]) if not p5m.empty else np.nan,
+                "p3_missing_additional_test_dirty": float(p3miss.iloc[0]["missing_additional"]) if not p3miss.empty else np.nan,
+                "p5_dqc_missing_additional_test_dirty": float(p5miss.iloc[0]["missing_additional"]) if not p5miss.empty else np.nan,
+            }
+        ]
+    )
+    out_p35.to_csv(paths.results / "metrics_p3_vs_p5_dqc.csv", index=False)
 
     # Budget sensitivity report (top-3 full/train)
     top3_rows = []
@@ -2875,8 +3029,11 @@ def main() -> None:
     c4 = bool(
         (paths.results / "products" / "P4" / "data.parquet").exists()
         and (paths.results / "products" / "P4" / "manifest.json").exists()
+        and (paths.results / "products" / "P5" / "data.parquet").exists()
+        and (paths.results / "products" / "P5" / "manifest.json").exists()
         and (paths.results / "metrics_p1_vs_p4_comparison.csv").exists()
-        and (tool_available or (paths.results / "tool_baseline_unavailable.txt").exists())
+        and (paths.results / "metrics_p3_vs_p5_dqc.csv").exists()
+        and (paths.results / "metrics_exceedance_retention.csv").exists()
     )
 
     c5_model = "ridge"
@@ -2935,6 +3092,12 @@ def main() -> None:
         },
         "C3": bool(c3),
         "C4": bool(c4),
+        "C4_detail": {
+            "p4_policy_baseline_available": bool((paths.results / "products" / "P4" / "manifest.json").exists()),
+            "p5_domain_rule_qc_available": bool(p5_available),
+            "p5_policy": "domain_rule_qc",
+            "exceedance_retention_table": "metrics_exceedance_retention.csv",
+        },
         "C5": bool(c5),
         "C5_detail": {
             "model": c5_model,
@@ -2961,7 +3124,7 @@ def main() -> None:
         pareto_top3_share[prod] = float(p["share_pct"].sum()) if not p.empty else np.nan
     _write_decision_summary_v4(paths, checklist, pareto_top3_share=pareto_top3_share, benchmark_selected=perf_sel_row_out)
 
-    _validate_required_artifacts(paths, tool_available=tool_available, budgets=tuple(float(b) for b in B_SET))
+    _validate_required_artifacts(paths, p5_available=p5_available, budgets=tuple(float(b) for b in B_SET))
 
     print("Pipeline complete")
     print(json.dumps(checklist, indent=2))

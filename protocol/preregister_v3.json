@@ -52,6 +52,16 @@
       100.0
     ]
   },
+  "domain_rule_baseline": {
+    "product": "P5",
+    "policy": "domain_rule_qc",
+    "description": "Fixed, non-optimized rule-based meteorological QC baseline.",
+    "drop_fail": true,
+    "drop_suspect": true,
+    "unit_censor": false,
+    "T_hours": 3,
+    "tol_hpa": 0.1
+  },
   "utility_v3": {
     "definition": "utility_v3 = -state_wind_spread - lambda*missing_additional - eta*suspect_rate",
     "lambda": 0.25,

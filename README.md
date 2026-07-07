@@ -1,9 +1,18 @@
-(QC with Guarantees v3)
+# Quality-control
 
-This repository is a clean package to reproduce the Paper 2 pipeline outputs.
+This repository contains the reproducibility package for the manuscript "From quality-control flags to auditable actions in environmental station networks: redundancy depth, spatial quarantine, and selection-bias diagnostics".
+
+It implements the QC evidence-to-action verification pipeline used in the manuscript, including policy selection, controlled fault experiments, spatial-quarantine archive checks, risk scoring, figure generation, and the public DWD reproduction path.
 
 Main pipeline:
 - `src/06_run_qc_with_guarantees_v3.py`
+
+Public DWD reproduction:
+- `docs/DWD_OPEN_REPRODUCTION.md`
+- `scripts/16_dwd_build_multivariate_product.py`
+- `scripts/17_dwd_stratify.py`
+- `scripts/18_dwd_derive_products.py`
+- `scripts/20_neighbor_failure_experiment.py`
 
 Figure redraw script:
 - `src/08_redraw_figures_v4_png.py`
@@ -20,7 +29,9 @@ The original AVAMET raw dataset is licensed and is not redistributed here.
 - Validator: `scripts/validate_input.py`
 - Public toy sample (schema/CI only): `data/sample_public.parquet`
 
-Access may be granted by AVAMET upon reasonable request and subject to their terms and conditions(info@avamet.org).
+Access may be granted by AVAMET upon reasonable request and subject to their terms and conditions (info@avamet.org).
+
+The DWD reproduction uses openly redistributable Deutscher Wetterdienst Climate Data Center observations. Station metadata are included under `data/dwd_10min/meta/`; raw DWD zip files are downloaded on demand and cached under `data/dwd_10min/raw/`. See `docs/DWD_OPEN_REPRODUCTION.md` for the public end-to-end commands.
 
 ## Quickstart (real licensed data)
 
@@ -55,6 +66,10 @@ The pipeline writes to `results_v3/`, including:
 - acceptance checklist (`checklist_acceptance_v4.json`)
 - benchmark artifacts (`benchmark_stuck/*`)
 - downstream/synthetic metrics (`downstream/*`, `synthetic/*`)
+- fixed domain-rule QC baseline (`products/P5/*`, `metrics_p3_vs_p5_dqc.csv`)
+- real TEST exceedance-retention table (`metrics_exceedance_retention.csv`, `tab_policy_test_exceedance_summary.*`)
+- neighbour-failure summaries (`runs_additional/neighbor_failure/*.csv`)
+- public DWD audit tables (`paper_artifacts/dwd_open_demo/*.csv`)
 - final figures (`results_v3/figures/F1..F8`).
 
 ## Reproducibility and Determinism
@@ -73,10 +88,13 @@ The pipeline writes to `results_v3/`, including:
 
 - Reference checks (selected metrics): `paper_artifacts/expected_reference.json`
 - Optional hashes of generated manuscript artifacts: `paper_artifacts/checksums.txt`
+- Public DWD reproduction guide: `docs/DWD_OPEN_REPRODUCTION.md`
+- Small public DWD audit outputs: `paper_artifacts/dwd_open_demo/`
+- Neighbour-failure outputs: `runs_additional/neighbor_failure/`
 
 ## Citation and License
 
 - Citation metadata: `CITATION.cff`
 - License: `LICENSE` (MIT)
 
-
+Use the GitHub release/tag associated with the manuscript submission when citing or auditing the reviewed version.

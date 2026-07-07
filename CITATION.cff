@@ -1,13 +1,12 @@
 cff-version: 1.2.0
 message: "If you use this repository, please cite it as follows."
-title: "QC with Guarantees v3: Reproducibility Package"
-version: "v1.0.0"
-date-released: 2026-02-20
+title: "Quality-control: QC evidence-to-action verification for environmental station networks"
+version: "ems-review-2026-07-07"
+date-released: 2026-07-07
 type: software
 authors:
-  - family-names: "Team"
-    given-names: "AVAMET QC"
-repository-code: "https://github.com/Semllo/Quality-control"
-url: "https://github.com/Semllo/Quality-control"
+  - family-names: "Semper"
+    given-names: "Marc"
+repository-code: "https://github.com/MarcSemperLloret/Quality-control"
+url: "https://github.com/MarcSemperLloret/Quality-control"
 license: "MIT"
-

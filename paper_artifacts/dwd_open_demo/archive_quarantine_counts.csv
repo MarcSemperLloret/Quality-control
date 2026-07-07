@@ -1,0 +1,9 @@
+phase,scope,n_total,pressure_quarantine,wind_quarantine,any_quarantine,pressure_rate,wind_rate,any_rate
+train,global,3157920,0,0,0,0.0,0.0,0.0
+train,clean,1052640,0,0,0,0.0,0.0,0.0
+train,medium,1052640,0,0,0,0.0,0.0,0.0
+train,dirty,1052640,0,0,0,0.0,0.0,0.0
+test,global,1575422,0,0,0,0.0,0.0,0.0
+test,clean,524222,0,0,0,0.0,0.0,0.0
+test,medium,525600,0,0,0,0.0,0.0,0.0
+test,dirty,525600,0,0,0,0.0,0.0,0.0

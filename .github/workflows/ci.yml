@@ -25,6 +25,28 @@ jobs:
         run: |
           python scripts/validate_input.py --input data/sample_public.parquet
 
+      - name: Compile reproduction scripts
+        run: |
+          python -m py_compile \
+            scripts/validate_input.py \
+            scripts/run_experiment.py \
+            scripts/verify_outputs.py \
+            scripts/11_measurement_fault_suite.py \
+            scripts/13_spatial_quarantine_archive.py \
+            scripts/15_fault_severity_sweep.py \
+            scripts/16_dwd_build_multivariate_product.py \
+            scripts/17_dwd_stratify.py \
+            scripts/18_dwd_derive_products.py \
+            scripts/19_cross_network_table.py \
+            scripts/20_neighbor_failure_experiment.py \
+            src/06_run_qc_with_guarantees_v3.py \
+            src/08_redraw_figures_v4_png.py
+
+      - name: Check public reproduction entry points
+        run: |
+          python scripts/16_dwd_build_multivariate_product.py --help
+          python scripts/20_neighbor_failure_experiment.py --help
+
       - name: Check config manifest cardinality
         run: |
           python - << 'PY'
@@ -33,4 +55,3 @@ jobs:
           assert df.shape[0] == 30, f"Expected 30 configs, got {df.shape[0]}"
           print("OK: configs/manifest.csv has 30 rows")
           PY
-
