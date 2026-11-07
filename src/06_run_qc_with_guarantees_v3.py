@@ -189,14 +189,14 @@ def _build_dedup_table(con: duckdb.DuckDBPyConnection, input_parquet: str) -> No
         SELECT
           ROW_NUMBER() OVER () AS ingest_order,
           station_id,
-          TRY_CAST(obs_time AS TIMESTAMP) AS timestamp_utc,
+          COALESCE(TRY_CAST(json_extract_string(payload_json, '$."data ini"') AS TIMESTAMP), TRY_CAST(obs_time AS TIMESTAMP)) AS timestamp_utc,
           TRY_CAST(REPLACE(NULLIF(TRIM(json_extract_string(payload_json, '$."pres mit_mit"')), 'None'), ',', '.') AS DOUBLE) AS pressure_raw,
           TRY_CAST(REPLACE(NULLIF(TRIM(json_extract_string(payload_json, '$."vent vel_mit"')), 'None'), ',', '.') AS DOUBLE) AS wind_mean_raw,
           TRY_CAST(REPLACE(NULLIF(TRIM(json_extract_string(payload_json, '$."vent vel_max"')), 'None'), ',', '.') AS DOUBLE) AS wind_gust_raw,
           TRY_CAST(REPLACE(NULLIF(TRIM(json_extract_string(payload_json, '$."vent gra_mit"')), 'None'), ',', '.') AS DOUBLE) AS wind_dir_raw
         FROM read_parquet('{input_parquet}')
-        WHERE TRY_CAST(obs_time AS TIMESTAMP) >= TIMESTAMP '{START_UTC}'
-          AND TRY_CAST(obs_time AS TIMESTAMP) < TIMESTAMP '{END_UTC}'
+        WHERE COALESCE(TRY_CAST(json_extract_string(payload_json, '$."data ini"') AS TIMESTAMP), TRY_CAST(obs_time AS TIMESTAMP)) >= TIMESTAMP '{START_UTC}'
+          AND COALESCE(TRY_CAST(json_extract_string(payload_json, '$."data ini"') AS TIMESTAMP), TRY_CAST(obs_time AS TIMESTAMP)) < TIMESTAMP '{END_UTC}'
           AND station_id IS NOT NULL
     """
     con.execute(q_raw)

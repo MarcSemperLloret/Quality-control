@@ -1,0 +1,3 @@
+group,low_events,low_retention,high_events,high_retention
+all stations,175727,0.4665020173337051,8552,0.3792095416276894
+stations below 1% flagged,74637,0.9899111700631055,2449,0.7860351163740302

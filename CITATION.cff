@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this repository, please cite it as follows."
 title: "Quality-control: QC evidence-to-action verification for environmental station networks"
-version: "ems-review-2026-07-07"
-date-released: 2026-07-07
+version: "ems-revision-r1"
+date-released: 2026-11-07
 type: software
 authors:
   - family-names: "Semper"

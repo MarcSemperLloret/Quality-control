@@ -7,6 +7,9 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+import sys as _s
+_s.path.insert(0, str(Path(__file__).resolve().parent))
+import neighbour_reference as nb
 import duckdb
 import numpy as np
 import pandas as pd
@@ -16,7 +19,8 @@ TRAIN_END = pd.Timestamp("2025-01-01 00:00:00", tz="UTC")
 TEST_END = pd.Timestamp("2026-01-01 00:00:00", tz="UTC")
 K_NEIGHBORS = 5
 SUPPORT_MIN_NEIGHBORS = 2
-PRESSURE_RESIDUAL_FLOOR_HPA = 8.0
+import os as _o
+PRESSURE_RESIDUAL_FLOOR_HPA = float(_o.environ.get('NB_TAU', '8'))
 
 
 @dataclass(frozen=True)
@@ -38,7 +42,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--raw-parquet",
         type=Path,
-        default=root.parent / "avamet_all.parquet",
+        default=root / "avamet_all.parquet",
     )
     parser.add_argument("--article-dir", type=Path, default=root / "article")
     return parser.parse_args()
@@ -131,18 +135,19 @@ def train_thresholds(p0: pd.DataFrame, neighbors: dict[str, list[str]]) -> tuple
             "wind_delta_q995": (train["wind_gust"] - train["wind_mean"]).groupby(train["station_id"]).quantile(0.995),
         }
     )
-    wind_thresholds["wind_delta_q995"] = wind_thresholds["wind_delta_q995"].clip(lower=30.0)
+    wind_thresholds["wind_delta_q995"] = wind_thresholds["wind_delta_q995"].clip(lower=30.0 / nb.WSCALE)
 
     pressure_medians = train.groupby("station_id")["pressure_hpa"].median().to_dict()
     wide_pressure = train.pivot(index="timestamp_utc", columns="station_id", values="pressure_hpa")
     pressure_anom = wide_pressure.subtract(pd.Series(pressure_medians), axis="columns")
+    pressure_anom_n = nb.anom(train, wide_pressure.index, pressure_medians)
     residuals: list[np.ndarray] = []
     for station_id, nids in neighbors.items():
-        valid_nids = [n for n in nids if n in pressure_anom.columns]
+        valid_nids = [n for n in nids if n in pressure_anom_n.columns]
         if len(valid_nids) < SUPPORT_MIN_NEIGHBORS or station_id not in pressure_anom.columns:
             continue
         target = pressure_anom[station_id]
-        neigh = pressure_anom[valid_nids]
+        neigh = pressure_anom_n[valid_nids]
         valid = target.notna() & (neigh.notna().sum(axis=1) >= SUPPORT_MIN_NEIGHBORS)
         if valid.any():
             residual = (target[valid] - neigh[valid].median(axis=1)).abs().to_numpy(dtype=float)
@@ -166,7 +171,8 @@ def spatial_quarantine_flags(
     wide_wind = p0.pivot(index="timestamp_utc", columns="station_id", values="wind_gust")
     wide_wind_mean = p0.pivot(index="timestamp_utc", columns="station_id", values="wind_mean")
     pressure_anom = wide_pressure.subtract(pd.Series(pressure_medians), axis="columns")
-    wind_high = wide_wind.ge(wind_thresholds["wind_u90"], axis="columns")
+    pressure_anom_n = nb.anom(p0, wide_pressure.index, pressure_medians)
+    wind_high = nb.wide(p0, "wind_gust", wide_wind.index).ge(nb.u90(wind_thresholds["wind_u90"]), axis="columns")
 
     flags = pd.DataFrame(
         {
@@ -180,15 +186,15 @@ def spatial_quarantine_flags(
     for station_id, nids in neighbors.items():
         if station_id not in wide_pressure.columns:
             continue
-        valid_nids = [n for n in nids if n in wide_pressure.columns]
+        valid_nids = [n for n in nids if n in pressure_anom_n.columns]
         if len(valid_nids) < SUPPORT_MIN_NEIGHBORS:
             continue
         part_idx = p0.index[p0["station_id"].eq(station_id)]
         part_times = p0.loc[part_idx, "timestamp_utc"]
 
         target_pressure = pressure_anom[station_id]
-        neigh_pressure = pressure_anom[valid_nids]
-        valid_pressure = target_pressure.notna() & (neigh_pressure.notna().sum(axis=1) >= SUPPORT_MIN_NEIGHBORS)
+        neigh_pressure = nb.screen(pressure_anom_n[valid_nids], pressure_threshold)
+        valid_pressure = target_pressure.notna() & (neigh_pressure.notna().sum(axis=1) >= nb.QUORUM)
         pressure_resid = (target_pressure - neigh_pressure.median(axis=1)).abs()
         pressure_times = set(pressure_resid[valid_pressure & pressure_resid.gt(pressure_threshold)].index)
         if pressure_times:
@@ -528,7 +534,7 @@ def main() -> None:
     t0 = time.perf_counter()
     station_ids = sorted(p0["station_id"].unique().tolist())
     coords = load_coordinates(args.raw_parquet, station_ids)
-    neighbors = nearest_neighbors(coords)
+    neighbors = nb.neighbors(nearest_neighbors(coords))
     wind_thresholds, pressure_medians, pressure_threshold = train_thresholds(p0, neighbors)
     timed(timings, "train spatial thresholds", t0)
 

@@ -25,8 +25,9 @@ python scripts/16_dwd_build_multivariate_product.py
 python scripts/17_dwd_stratify.py
 python scripts/18_dwd_derive_products.py
 
-python scripts/11_measurement_fault_suite.py --results-dir runs_additional/DWD/results_v3 --article-dir runs_additional/DWD/article_dwd
-python scripts/13_spatial_quarantine_archive.py --results-dir runs_additional/DWD/results_v3 --article-dir runs_additional/DWD/article_dwd
+$env:NB_WSCALE = '3.6'   # DWD wind is in m/s; bash: export NB_WSCALE=3.6
+python scripts/11_measurement_fault_suite.py --results-dir runs_additional/DWD/results_v3 --raw-parquet runs_additional/DWD/results_v3/products/P0/data.parquet --article-dir runs_additional/DWD/article_dwd
+python scripts/13_spatial_quarantine_archive.py --results-dir runs_additional/DWD/results_v3 --raw-parquet runs_additional/DWD/results_v3/products/P0/data.parquet --article-dir runs_additional/DWD/article_dwd
 python scripts/20_neighbor_failure_experiment.py --out-dir runs_additional/neighbor_failure --article-dir article
 python scripts/19_cross_network_table.py
 ```
@@ -45,7 +46,7 @@ The key small outputs are:
 - `runs_additional/neighbor_failure/neighbor_failure_marginal.csv`
 - `runs_additional/neighbor_failure/m_distribution.csv`
 
-Reference copies of the small DWD outputs used for manuscript audit are stored in `paper_artifacts/dwd_open_demo/`. Minor floating-point differences can occur across numerical backends; the qualitative checks are the rule-missed pressure offset, pressure drift, and wind spike/burst families recovered by spatial evidence, and near-zero DWD high-state censoring under the guarded archive action.
+Reference copies of the small DWD outputs used for manuscript audit are stored in `paper_artifacts/dwd_open_demo/`. Minor floating-point differences can occur across numerical backends; the qualitative checks are the rule-missed pressure offset, pressure drift, and wind spike/burst families recovered by spatial evidence, and high-value retention above the 0.95 limit, with about 98.8% of the highest gusts retained when wind thresholds use consistent units.
 
 ## Scope
 

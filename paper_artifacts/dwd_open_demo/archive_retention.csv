@@ -4,12 +4,12 @@ Delete-all-flags,u95,12883,12883,1.0
 Constraint-selected P3,u95,12883,12883,1.0
 P4 pressure spatial quarantine,u95,12883,12883,1.0
 P4 pressure spatial direct deletion,u95,12883,12883,1.0
-P5 full spatial quarantine,u95,12883,12883,1.0
-P6 full spatial direct deletion,u95,12883,12883,1.0
+P5 full spatial quarantine,u95,12883,12857,0.9979818365287588
+P6 full spatial direct deletion,u95,12883,12857,0.9979818365287588
 Raw,u99,2116,2116,1.0
 Delete-all-flags,u99,2116,2116,1.0
 Constraint-selected P3,u99,2116,2116,1.0
 P4 pressure spatial quarantine,u99,2116,2116,1.0
 P4 pressure spatial direct deletion,u99,2116,2116,1.0
-P5 full spatial quarantine,u99,2116,2116,1.0
-P6 full spatial direct deletion,u99,2116,2116,1.0
+P5 full spatial quarantine,u99,2116,2090,0.9877126654064272
+P6 full spatial direct deletion,u99,2116,2090,0.9877126654064272

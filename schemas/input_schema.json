@@ -11,7 +11,7 @@
     },
     "obs_time": {
       "type": "string",
-      "description": "UTC timestamp parseable by pandas/duckdb"
+      "description": "Fallback timestamp parseable by pandas/duckdb; the payload field data ini is used when present"
     },
     "payload_json": {
       "type": "string",

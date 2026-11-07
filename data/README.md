@@ -9,8 +9,9 @@ You must provide it locally under your license terms.
 
 Expected columns:
 - `station_id`
-- `obs_time`
+- `obs_time` (fallback timestamp; day and month are exchanged in some rows, so `data ini` is used when present)
 - `payload_json` (JSON string with keys):
+  - `data ini` (observation time, local civil time at the end of the interval)
   - `pres mit_mit`
   - `vent vel_mit`
   - `vent vel_max`

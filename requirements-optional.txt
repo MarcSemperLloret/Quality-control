@@ -1,0 +1,2 @@
+# Only for the SaQC baseline (scripts/14_saqc_selection_stress.py)
+saqc==2.9.0

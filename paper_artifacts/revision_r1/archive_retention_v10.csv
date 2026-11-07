@@ -1,0 +1,15 @@
+policy,threshold,n_raw_events,retained,retention
+Raw,u95,23984,23984,1.0
+Delete-all-flags,u95,23984,23103,0.9632671781187458
+Constraint-selected P3,u95,23984,23984,1.0
+P4 pressure spatial quarantine,u95,23984,23984,1.0
+P4 pressure spatial direct deletion,u95,23984,23984,1.0
+P5 full spatial quarantine,u95,23984,23503,0.9799449633088726
+P6 full spatial direct deletion,u95,23984,23503,0.9799449633088726
+Raw,u99,3726,3726,1.0
+Delete-all-flags,u99,3726,3555,0.9541062801932367
+Constraint-selected P3,u99,3726,3726,1.0
+P4 pressure spatial quarantine,u99,3726,3726,1.0
+P4 pressure spatial direct deletion,u99,3726,3726,1.0
+P5 full spatial quarantine,u99,3726,3245,0.870907139023081
+P6 full spatial direct deletion,u99,3726,3245,0.870907139023081

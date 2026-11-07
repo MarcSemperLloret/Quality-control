@@ -5,6 +5,9 @@ import math
 from dataclasses import dataclass
 from pathlib import Path
 
+import sys as _s
+_s.path.insert(0, str(Path(__file__).resolve().parent))
+import neighbour_reference as nb
 import duckdb
 import matplotlib
 import numpy as np
@@ -16,10 +19,12 @@ matplotlib.use("Agg")
 
 TRAIN_END = pd.Timestamp("2025-01-01 00:00:00", tz="UTC")
 TEST_END = pd.Timestamp("2026-01-01 00:00:00", tz="UTC")
-SEED = 20260519
+import os as _o
+SEED = int(_o.environ.get('NB_SEED', '20260519'))
+FAULT_HPA = float(_o.environ.get('NB_FAULT_HPA', '20'))
 K_NEIGHBORS = 5
 SUPPORT_MIN_NEIGHBORS = 2
-PRESSURE_RESIDUAL_FLOOR_HPA = 8.0
+PRESSURE_RESIDUAL_FLOOR_HPA = float(_o.environ.get('NB_TAU', '8'))
 
 
 @dataclass(frozen=True)
@@ -199,10 +204,11 @@ def pressure_residual_thresholds(p0: pd.DataFrame, neighbors: dict[str, list[str
     med = train.groupby("station_id")["pressure_hpa"].median()
     wide = train.pivot(index="timestamp_utc", columns="station_id", values="pressure_hpa")
     anomalies = wide.subtract(med, axis="columns")
+    anomalies_n = nb.anom(train, wide.index, med.to_dict())
     residuals: list[np.ndarray] = []
     for station_id, nids in neighbors.items():
-        valid_nids = [n for n in nids if n in anomalies.columns]
-        neigh = anomalies[valid_nids]
+        valid_nids = [n for n in nids if n in anomalies_n.columns]
+        neigh = anomalies_n[valid_nids]
         target = anomalies[station_id]
         valid = target.notna() & (neigh.notna().sum(axis=1) >= SUPPORT_MIN_NEIGHBORS)
         if valid.any():
@@ -290,12 +296,12 @@ def apply_faults(
         elif spec.key == "wind_incoherence":
             faulted.loc[locs, "wind_mean"] = original_gust + 10.0
         elif spec.key == "pressure_offset":
-            faulted.loc[locs, "pressure_hpa"] = original_pressure + 20.0
+            faulted.loc[locs, "pressure_hpa"] = original_pressure + FAULT_HPA
         elif spec.key == "pressure_drift":
-            faulted.loc[locs, "pressure_hpa"] = original_pressure + np.linspace(0.0, 20.0, len(locs))
+            faulted.loc[locs, "pressure_hpa"] = original_pressure + np.linspace(0.0, FAULT_HPA, len(locs))
         elif spec.key == "wind_spike_burst":
             u99 = float(thresholds.loc[station_id, "wind_u99"])
-            faulted.loc[locs, "wind_gust"] = np.maximum(original_gust + 60.0, u99 + 30.0)
+            faulted.loc[locs, "wind_gust"] = np.maximum(original_gust + 60.0 / nb.WSCALE, u99 + 30.0 / nb.WSCALE)
             faulted.loc[locs, "wind_mean"] = original_mean
         else:
             raise ValueError(spec.key)
@@ -406,7 +412,8 @@ def spatial_flags(
     wide_wind = df.pivot(index="timestamp_utc", columns="station_id", values="wind_gust")
     wide_wind_mean = df.pivot(index="timestamp_utc", columns="station_id", values="wind_mean")
     pressure_anom = wide_pressure.subtract(pd.Series(pressure_medians), axis="columns")
-    wind_high = wide_wind.ge(thresholds["wind_u90"], axis="columns")
+    pressure_anom_n = nb.anom(df, wide_pressure.index, pressure_medians)
+    wind_high = nb.wide(df, "wind_gust", wide_wind.index).ge(nb.u90(thresholds["wind_u90"]), axis="columns")
 
     pressure_flag = pd.Series(False, index=df.index)
     wind_flag = pd.Series(False, index=df.index)
@@ -415,12 +422,12 @@ def spatial_flags(
     for station_id, nids in neighbors.items():
         if station_id not in wide_pressure.columns:
             continue
-        valid_nids = [n for n in nids if n in wide_pressure.columns]
+        valid_nids = [n for n in nids if n in pressure_anom_n.columns]
         if len(valid_nids) < SUPPORT_MIN_NEIGHBORS:
             continue
         target_pressure = pressure_anom[station_id]
-        neigh_pressure = pressure_anom[valid_nids]
-        valid_pressure = target_pressure.notna() & (neigh_pressure.notna().sum(axis=1) >= SUPPORT_MIN_NEIGHBORS)
+        neigh_pressure = nb.screen(pressure_anom_n[valid_nids], pressure_residual_threshold)
+        valid_pressure = target_pressure.notna() & (neigh_pressure.notna().sum(axis=1) >= nb.QUORUM)
         pressure_resid = (target_pressure - neigh_pressure.median(axis=1)).abs()
         pressure_times = pressure_resid[valid_pressure & pressure_resid.gt(pressure_residual_threshold)].index
 
@@ -592,7 +599,10 @@ def main() -> None:
     p0 = p0[p0["timestamp_utc"] < TEST_END].copy()
     station_ids = sorted(p0["station_id"].unique().tolist())
     coords = load_coordinates(args.raw_parquet, station_ids)
-    neighbors = nearest_neighbors(coords)
+    neighbors = nb.neighbors(nearest_neighbors(coords))
+    _bg = p0[p0["timestamp_utc"] >= TRAIN_END].copy()
+    _bg["pressure_hpa"] = mask_invalid_pressure(_bg)
+    nb.BG = _bg
     pressure_medians, pressure_residual_threshold = pressure_residual_thresholds(p0, neighbors)
 
     train = p0[p0["timestamp_utc"] < TRAIN_END].copy()
@@ -603,7 +613,7 @@ def main() -> None:
             "wind_delta_q995": (train["wind_gust"] - train["wind_mean"]).groupby(train["station_id"]).quantile(0.995),
         }
     )
-    thresholds["wind_delta_q995"] = thresholds["wind_delta_q995"].clip(lower=30.0)
+    thresholds["wind_delta_q995"] = thresholds["wind_delta_q995"].clip(lower=30.0 / nb.WSCALE)
 
     test_dirty = p0[(p0["timestamp_utc"] >= TRAIN_END) & (p0["stratum"].eq("dirty"))].copy()
     test_dirty = test_dirty.sort_values(["station_id", "timestamp_utc"]).reset_index(drop=True)
@@ -655,7 +665,8 @@ def main() -> None:
     pd.concat(all_events, ignore_index=True).to_csv(out_dir / "measurement_fault_suite_events.csv", index=False)
     pd.concat(all_labels, ignore_index=True).to_csv(out_dir / "measurement_fault_suite_labels.csv", index=False)
 
-    missing = pd.read_csv(results_dir / "metrics_missingness.csv")
+    missing_path = results_dir / "metrics_missingness.csv"
+    missing = pd.read_csv(missing_path) if missing_path.exists() else pd.DataFrame(columns=["product", "phase", "scope", "variable", "missing_additional"])
     context_rows = []
     for product, label in [("P3", "P3"), ("P1", "Aggressive censoring"), ("P4", "Fixed domain-rule QC")]:
         row = missing.query(

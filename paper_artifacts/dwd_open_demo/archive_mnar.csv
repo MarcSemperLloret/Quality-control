@@ -39,19 +39,19 @@ P4 pressure spatial direct deletion,test,global,0.0,0.0,0.0
 P4 pressure spatial direct deletion,test,clean,0.0,0.0,0.0
 P4 pressure spatial direct deletion,test,medium,0.0,0.0,0.0
 P4 pressure spatial direct deletion,test,dirty,0.0,0.0,0.0
-P5 full spatial quarantine,train,global,0.0,0.0,0.0
-P5 full spatial quarantine,train,clean,0.0,0.0,0.0
-P5 full spatial quarantine,train,medium,0.0,0.0,0.0
-P5 full spatial quarantine,train,dirty,0.0,0.0,0.0
-P5 full spatial quarantine,test,global,0.0,0.0,0.0
-P5 full spatial quarantine,test,clean,0.0,0.0,0.0
-P5 full spatial quarantine,test,medium,0.0,0.0,0.0
-P5 full spatial quarantine,test,dirty,0.0,0.0,0.0
-P6 full spatial direct deletion,train,global,0.0,0.0,0.0
-P6 full spatial direct deletion,train,clean,0.0,0.0,0.0
-P6 full spatial direct deletion,train,medium,0.0,0.0,0.0
-P6 full spatial direct deletion,train,dirty,0.0,0.0,0.0
-P6 full spatial direct deletion,test,global,0.0,0.0,0.0
-P6 full spatial direct deletion,test,clean,0.0,0.0,0.0
-P6 full spatial direct deletion,test,medium,0.0,0.0,0.0
-P6 full spatial direct deletion,test,dirty,0.0,0.0,0.0
+P5 full spatial quarantine,train,global,6.636751755767511e-05,0.0006636751755767535,0.0
+P5 full spatial quarantine,train,clean,6.212070530893083e-05,0.0006212070530893104,0.0
+P5 full spatial quarantine,train,medium,6.035884305727253e-05,0.0006035884305727275,0.0
+P5 full spatial quarantine,train,dirty,7.142443487828865e-05,0.000714244348782889,0.0
+P5 full spatial quarantine,test,global,4.862841231564486e-05,0.0004862841231564503,0.0
+P5 full spatial quarantine,test,clean,4.106615562117435e-05,0.00041066155621174495,0.0
+P5 full spatial quarantine,test,medium,5.0868680544686e-05,0.0005086868054468618,0.0
+P5 full spatial quarantine,test,dirty,5.1869289390735165e-05,0.0005186928939073535,0.0
+P6 full spatial direct deletion,train,global,6.636751755767511e-05,0.0006636751755767535,0.0
+P6 full spatial direct deletion,train,clean,6.212070530893083e-05,0.0006212070530893104,0.0
+P6 full spatial direct deletion,train,medium,6.035884305727253e-05,0.0006035884305727275,0.0
+P6 full spatial direct deletion,train,dirty,7.142443487828865e-05,0.000714244348782889,0.0
+P6 full spatial direct deletion,test,global,4.862841231564486e-05,0.0004862841231564503,0.0
+P6 full spatial direct deletion,test,clean,4.106615562117435e-05,0.00041066155621174495,0.0
+P6 full spatial direct deletion,test,medium,5.0868680544686e-05,0.0005086868054468618,0.0
+P6 full spatial direct deletion,test,dirty,5.1869289390735165e-05,0.0005186928939073535,0.0

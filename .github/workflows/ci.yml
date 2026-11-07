@@ -31,7 +31,9 @@ jobs:
             scripts/validate_input.py \
             scripts/run_experiment.py \
             scripts/verify_outputs.py \
+            scripts/neighbour_reference.py \
             scripts/11_measurement_fault_suite.py \
+            scripts/12_operational_risk_analysis.py \
             scripts/13_spatial_quarantine_archive.py \
             scripts/15_fault_severity_sweep.py \
             scripts/16_dwd_build_multivariate_product.py \
@@ -41,6 +43,12 @@ jobs:
             scripts/20_neighbor_failure_experiment.py \
             src/06_run_qc_with_guarantees_v3.py \
             src/08_redraw_figures_v4_png.py
+
+      - name: Unit tests
+        run: python -m pytest -q tests
+
+      - name: Worked example
+        run: python examples/quickstart.py
 
       - name: Check public reproduction entry points
         run: |

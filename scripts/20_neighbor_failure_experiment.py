@@ -26,6 +26,9 @@ import math
 import warnings
 from pathlib import Path
 
+import sys as _s
+_s.path.insert(0, str(Path(__file__).resolve().parent))
+import neighbour_reference as nb
 import numpy as np
 import pandas as pd
 
@@ -33,7 +36,7 @@ TRAIN_END = pd.Timestamp("2025-01-01 00:00:00", tz="UTC")
 TEST_END = pd.Timestamp("2026-01-01 00:00:00", tz="UTC")
 K_NEIGHBORS = 5
 SUPPORT_MIN_NEIGHBORS = 2     # minimum references to attempt any action
-QUORUM = 3                    # guarded action requires >=3 *healthy* references
+QUORUM = nb.QUORUM            # guarded action requires >=3 *healthy* references
 REF_HEALTH_MIN_PEERS = 3      # peers needed for leave-one-neighbour-out screening
 REF_HEALTH_MAD_Z = 3.0
 PRESSURE_FLOOR_HPA = 500.0    # below this a pressure reading is physically dead/sentinel
@@ -124,6 +127,12 @@ def run_network(name, product_path, raw_parquet):
     rng = np.random.default_rng(RNG_SEED + (0 if name == "AVAMET" else 1000))
     df, coords = load_network(name, product_path, raw_parquet)
     neighbors = neighbor_sets(coords)
+    if name == "AVAMET":
+        neighbors = nb.neighbors(neighbors)
+        e = nb.extra()
+        if e is not None:
+            df = pd.concat([df, e[["station_id", "timestamp_utc", "pressure_hpa"]]], ignore_index=True)
+        df = nb.regrid(df)
 
     df = df.assign(pressure_valid=valid_pressure(df["pressure_hpa"]))
     train_median = df[df["timestamp_utc"] < TRAIN_END].groupby("station_id")["pressure_valid"].median()
@@ -358,13 +367,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-dir", type=Path, default=root / "runs_additional" / "neighbor_failure")
     ap.add_argument("--article-dir", type=Path, default=root / "article")
+    ap.add_argument("--avamet-product", type=Path, default=root / "runs_additional" / "BASELINE" / "results_v3" / "products" / "P0" / "data.parquet")
+    ap.add_argument("--dwd-product", type=Path, default=root / "runs_additional" / "DWD" / "results_v3" / "products" / "P0" / "data.parquet")
+    ap.add_argument("--raw-parquet", type=Path, default=root / "avamet_all.parquet")
     args = ap.parse_args()
     args.out_dir.mkdir(parents=True, exist_ok=True)
     args.article_dir.mkdir(parents=True, exist_ok=True)
 
     networks = [
-        ("AVAMET", root / "runs_additional" / "BASELINE" / "results_v3" / "products" / "P0" / "data.parquet", root.parent / "avamet_all.parquet"),
-        ("DWD", root / "runs_additional" / "DWD" / "results_v3" / "products" / "P0" / "data.parquet", None),
+        ("AVAMET", args.avamet_product, args.raw_parquet),
+        ("DWD", args.dwd_product, None),
     ]
     m_hist_all, marg_all, bym_all, summaries = [], [], [], []
     for name, prod, raw in networks:
