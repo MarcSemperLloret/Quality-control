@@ -1,0 +1,4 @@
+group,n_stations,low_events,low_flagged,low_retention,high_events,high_flagged,high_retention,exploratory_subset
+all stations,501,175727,93750,0.4665020173337051,8552,5309,0.3792095416276894,False
+stations below 1% flagged,447,74637,753,0.9899111700631055,2449,524,0.7860351163740302,True
+"below 1% flagged, largest high-tail contributor excluded",446,74508,624,0.991625060396199,1940,15,0.9922680412371134,True
