@@ -1,4 +1,9 @@
-"""Where do flagged high-pressure records at quiet stations come from? Usage: 28_pressure_extreme_trace.py WORK_DIR"""
+"""Export exploratory pressure-extreme diagnostics. Usage: 28_pressure_extreme_trace.py WORK_DIR OUT_DIR
+
+The below-1% subset uses flags over the full archive; excluding its largest
+contributor is a post-hoc influence check, not an independent release test.
+AVAMET civil-clock values retain the historical timestamp_utc column name.
+"""
 import sys
 import warnings
 from pathlib import Path
@@ -8,6 +13,8 @@ import pandas as pd
 
 warnings.filterwarnings("ignore")
 S = Path(sys.argv[1])
+O = Path(sys.argv[2])
+O.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import neighbour_reference as nb  # noqa: E402
 
@@ -48,3 +55,26 @@ ret = 1 - (f.sum(0) / np.maximum(ev.sum(0), 1))
 print("median station retention", round(float(np.median(ret[ev.sum(0) > 0])), 3))
 top = per.index[0]
 print("excluding top station", round(float(1 - (per.sum() - per.iloc[0]) / (ev.sum() - ev[:, ix[top]].sum())), 3))
+
+
+# Export counts as well as rates; no station identifiers are released.
+lo = np.nanquantile(A[tr], .01, axis=0)
+valid_test = np.isfinite(res) & te[:, None]
+low_events = (A < lo) & valid_test
+high_events = (A > hi) & valid_test
+without_top = quiet.copy()
+without_top[ix[top]] = False
+rows = []
+for name, cols in [("all stations", np.ones(len(ids), bool)),
+                   ("stations below 1% flagged", quiet),
+                   ("below 1% flagged, largest high-tail contributor excluded", without_top)]:
+    nl = int(low_events[:, cols].sum())
+    nh = int(high_events[:, cols].sum())
+    fl = int((low_events[:, cols] & (np.abs(res[:, cols]) > 8)).sum())
+    fh = int((high_events[:, cols] & (np.abs(res[:, cols]) > 8)).sum())
+    rows.append(dict(group=name, n_stations=int(cols.sum()),
+                     low_events=nl, low_flagged=fl, low_retention=1-fl/nl,
+                     high_events=nh, high_flagged=fh, high_retention=1-fh/nh,
+                     exploratory_subset=name != "all stations"))
+pd.DataFrame(rows).to_csv(O / "pressure_extreme_influence.csv", index=False)
+print(pd.DataFrame(rows).to_string(index=False), flush=True)

@@ -10,7 +10,8 @@ the three safeguards described in the manuscript:
 
 Targets are never aligned: only references are.
 
-Environment variables (defaults give the configuration used in the revised manuscript):
+Environment variables (defaults are a sample-only setup; the AVAMET manuscript
+configuration additionally requires NB_MODE=pool and NB_POOL_DIR):
 
   NB_TOL_MIN    reference tolerance in minutes; 0 means exact timestamps (default 14)
   NB_MODE       orig: references only from the frame passed in

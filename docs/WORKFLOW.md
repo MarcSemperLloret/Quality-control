@@ -109,3 +109,13 @@ Provide a table with station, timestamp, pressure, mean wind and gust, plus stat
 3. Check that the variable is coherent at the distances between stations.
 4. Set `NB_WSCALE=3.6` if wind is in m/s.
 5. Prefer quarantine to deletion, so that decisions can be reviewed.
+
+## Interpreting the pressure diagnostics
+
+Script 27 reports pressure-state spread and raw-extreme retention across the network. Script 28 exports full-pool retention and exploratory influence subsets:
+
+```bash
+python scripts/28_pressure_extreme_trace.py $WORK $WORK/network
+```
+
+The below-1% subset uses flags over the full archive, and excluding its largest high-tail contributor is a post-hoc influence check. Neither changes the release limits or confirms the truth of removed extremes. Main spatial release tables use station-specific TRAIN gust thresholds; auxiliary common-threshold diagnostics use TRAIN values pooled across evaluated stations.

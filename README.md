@@ -54,7 +54,7 @@ Then follow the commands in [docs/WORKFLOW.md](docs/WORKFLOW.md). Station-level 
 
 ## Settings
 
-Defaults reproduce the revised manuscript for the evaluation sample. Settings are environment variables documented at the top of [scripts/neighbour_reference.py](scripts/neighbour_reference.py). The network pool needs `NB_MODE=pool`.
+Defaults provide a sample-only setup. Reproducing the revised AVAMET results requires `NB_MODE=pool` and `NB_POOL_DIR` pointing to the generated pool. Settings are environment variables documented at the top of [scripts/neighbour_reference.py](scripts/neighbour_reference.py). The network pool needs `NB_MODE=pool`.
 
 | Setting | Value |
 |---|---|

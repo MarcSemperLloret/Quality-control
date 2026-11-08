@@ -1,5 +1,13 @@
 # Changelog
 
+## ems-revision-r1.1
+
+Documentation and export update for the resubmitted revision. Scientific code and results are unchanged from `ems-revision-r1`.
+
+- README and `scripts/neighbour_reference.py`: the defaults are a sample-only setup; the AVAMET manuscript configuration requires `NB_MODE=pool` and `NB_POOL_DIR`.
+- `docs/WORKFLOW.md`: how to interpret the pressure diagnostics, and the difference between station-specific and common gust thresholds.
+- `scripts/28_pressure_extreme_trace.py`: takes an output folder and exports full-pool and exploratory pressure-retention counts to `pressure_extreme_influence.csv`, without station identifiers.
+
 ## ems-revision-r1
 
 Revision of the manuscript after peer review. The reviewed version remains available as the tag `ems-review-2026-07-07`.
